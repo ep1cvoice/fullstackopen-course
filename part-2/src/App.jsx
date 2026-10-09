@@ -1,35 +1,65 @@
 import Course from './Course/Course';
 
 const App = () => {
-	const course = {
-		name: 'Half Stack application development',
+	const courses = [
+		{
+			name: 'Half Stack application development',
+			id: 1,
+			parts: [
+				{
+					name: 'Fundamentals of React',
+					exercises: 10,
+					id: 1,
+				},
+				{
+					name: 'Using props to pass data',
+					exercises: 7,
+					id: 2,
+				},
+				{
+					name: 'State of a component',
+					exercises: 14,
+					id: 3,
+				},
+				{
+					name: 'Redux',
+					exercises: 11,
+					id: 4,
+				},
+			],
+		},
+		{
+			name: 'Node.js',
+			id: 2,
+			parts: [
+				{
+					name: 'Routing',
+					exercises: 3,
+					id: 1,
+				},
+				{
+					name: 'Middlewares',
+					exercises: 7,
+					id: 2,
+				},
+			],
+		},
+	];
 
-		parts: [
-			{
-				name: 'Fundamentals of React',
-				exercises: 10,
-				id: 1,
-			},
-			{
-				name: 'Using props to pass data',
-				exercises: 7,
-				id: 2,
-			},
-			{
-				name: 'State of a component',
-				exercises: 14,
-				id: 3,
-			},
-		],
-	}
-
-	const total = course.parts.reduce((acc, current) => {
-		return acc + current.exercises;
+	const total = courses.reduce((acc, course) => {
+		const courseTotal = course.parts.reduce((sum, part) => {
+			return sum + part.exercises;
+		}, 0);
+	
+		return acc + courseTotal;
 	}, 0);
 
 	return (
 		<>
-			<Course course={course} /><p>Total number of exercices is: {total}</p>
+			{courses.map((course) => 
+			<Course course={course} key={course.id}/>)}
+			<br />
+			<p>Total number of exercices is: {total}</p>
 		</>
 	);
 };
