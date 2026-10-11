@@ -9,9 +9,10 @@ const App = () => {
 	const [number, setNumber] = useState('');
 	const [searchField, setSearchField] = useState('');
 	const [persons, setPersons] = useState([]);
+	const baseUrl = 'http://localhost:3001/persons';
 
 	useEffect(() => {
-		axios.get('http://localhost:3001/persons').then((response) => {
+		axios.get(baseUrl).then((response) => {
 			setPersons(response.data);
 		});
 	}, []);
@@ -34,7 +35,9 @@ const App = () => {
 		} else {
 			persons.some((contact) => contact.name === newName)
 				? alert('contact already exists')
-				: setPersons(persons.concat(personObject), setNewName(''), setNumber(''));
+				: axios.post(baseUrl, personObject).then((response) => {
+						setPersons(persons.concat(response.data));
+					});
 		}
 	};
 
