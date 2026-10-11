@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import contactService from './services/contacts';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
@@ -9,10 +9,9 @@ const App = () => {
 	const [number, setNumber] = useState('');
 	const [searchField, setSearchField] = useState('');
 	const [persons, setPersons] = useState([]);
-	const baseUrl = 'http://localhost:3001/persons';
 
 	useEffect(() => {
-		axios.get(baseUrl).then((response) => {
+		contactService.getAll().then((response) => {
 			setPersons(response.data);
 		});
 	}, []);
@@ -35,9 +34,9 @@ const App = () => {
 		} else {
 			persons.some((contact) => contact.name === newName)
 				? alert('contact already exists')
-				: axios.post(baseUrl, personObject).then((response) => {
-						setPersons(persons.concat(response.data));
-					});
+				: contactService.create(personObject).then((response) => {
+					setPersons(persons.concat(response.data))
+				});
 		}
 	};
 
