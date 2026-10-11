@@ -21,22 +21,42 @@ const App = () => {
 	const addNewName = (event) => {
 		event.preventDefault();
 
-		const userNameInput = newName;
-		const userPhoneInput = number;
-
 		const personObject = {
-			name: userNameInput,
-			number: userPhoneInput,
+			name: newName,
+			number: number,
 		};
+
+		const existingPerson = persons.find((person) => person.name === newName);
 
 		if (newName === '') {
 			alert('field is empty');
+			return;
+		}
+		if (existingPerson) {
+			const confirmed = window.confirm(`${existingPerson.name} is already added to phonebook. Replace the old number?`);
+
+			if (!confirmed) {
+				return;
+			}
+
+			const updatedPerson = {
+				...existingPerson,
+				number: number,
+			};
+
+			contactService.update(existingPerson.id, updatedPerson).then((response) => {
+				setPersons(persons.map((person) => (person.id === existingPerson.id ? response.data : person)));
+
+				setNewName('');
+				setNumber('');
+			});
 		} else {
-			persons.some((contact) => contact.name === newName)
-				? alert('contact already exists')
-				: contactService.create(personObject).then((response) => {
-						setPersons(persons.concat(response.data));
-					});
+			contactService.create(personObject).then((response) => {
+				setPersons(persons.concat(response.data));
+
+				setNewName('');
+				setNumber('');
+			});
 		}
 	};
 
