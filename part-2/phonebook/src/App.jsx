@@ -3,12 +3,14 @@ import contactService from './services/contacts';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
+import Notification from './components/Notification';
 
 const App = () => {
 	const [newName, setNewName] = useState('');
 	const [number, setNumber] = useState('');
 	const [searchField, setSearchField] = useState('');
 	const [persons, setPersons] = useState([]);
+	const [successMessage, setSuccessMessage] = useState(null);
 
 	useEffect(() => {
 		contactService.getAll().then((response) => {
@@ -54,6 +56,11 @@ const App = () => {
 			contactService.create(personObject).then((response) => {
 				setPersons(persons.concat(response.data));
 
+				setTimeout(() => {
+					setSuccessMessage(null);
+				}, 5000);
+
+				setSuccessMessage('Successfully added a new contact!');
 				setNewName('');
 				setNumber('');
 			});
@@ -75,6 +82,7 @@ const App = () => {
 	return (
 		<div>
 			<h2>Phonebook</h2>
+			<Notification message={successMessage} />
 			<Filter searchField={searchField} setSearchField={setSearchField} />
 			<br></br>
 			<br></br>
