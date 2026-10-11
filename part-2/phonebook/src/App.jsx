@@ -10,7 +10,10 @@ const App = () => {
 	const [number, setNumber] = useState('');
 	const [searchField, setSearchField] = useState('');
 	const [persons, setPersons] = useState([]);
-	const [successMessage, setSuccessMessage] = useState(null);
+	const [notification, setNotification] = useState({
+		message: null,
+		type: 'success',
+	});
 
 	useEffect(() => {
 		contactService.getAll().then((response) => {
@@ -46,24 +49,73 @@ const App = () => {
 				number: number,
 			};
 
-			contactService.update(existingPerson.id, updatedPerson).then((response) => {
-				setPersons(persons.map((person) => (person.id === existingPerson.id ? response.data : person)));
+			contactService
+				.update(existingPerson.id, updatedPerson)
+				.then((response) => {
+					setPersons(persons.map((person) => (person.id === existingPerson.id ? response.data : person)));
 
-				setNewName('');
-				setNumber('');
-			});
+					setNotification({
+						message: `Successfully updated a contact of ${existingPerson.name}`,
+						type: 'success',
+					});
+
+					setTimeout(() => {
+						setNotification({
+							message: null,
+							type: 'success',
+						});
+					}, 5000);
+
+					setNewName('');
+					setNumber('');
+				})
+				.catch((error) => {
+					setNotification({
+						message: `Failed to update a contact: ${error.message}`,
+						type: 'error',
+					});
+
+					setTimeout(() => {
+						setNotification({
+							message: null,
+							type: 'success',
+						});
+					}, 5000);
+				});
 		} else {
-			contactService.create(personObject).then((response) => {
-				setPersons(persons.concat(response.data));
+			contactService
+				.create(personObject)
+				.then((response) => {
+					setPersons(persons.concat(response.data));
 
-				setTimeout(() => {
-					setSuccessMessage(null);
-				}, 5000);
+					setNotification({
+						message: 'Successfully created a contact',
+						type: 'success',
+					});
 
-				setSuccessMessage('Successfully added a new contact!');
-				setNewName('');
-				setNumber('');
-			});
+					setTimeout(() => {
+						setNotification({
+							message: null,
+							type: 'success',
+						});
+					}, 5000);
+
+					setNewName('');
+					setNumber('');
+				})
+				.catch((error) => {
+					setNotification({
+						message: `Failed to create a contact: ${error.message}`,
+						type: 'error',
+					});
+
+					setTimeout(() => {
+						setNotification({
+							message: null,
+							type: 'success',
+						});
+					}, 5000);
+				});
 		}
 	};
 
@@ -82,7 +134,7 @@ const App = () => {
 	return (
 		<div>
 			<h2>Phonebook</h2>
-			<Notification message={successMessage} />
+			<Notification message={notification.message} type={notification.type} />
 			<Filter searchField={searchField} setSearchField={setSearchField} />
 			<br></br>
 			<br></br>
