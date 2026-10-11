@@ -35,9 +35,21 @@ const App = () => {
 			persons.some((contact) => contact.name === newName)
 				? alert('contact already exists')
 				: contactService.create(personObject).then((response) => {
-					setPersons(persons.concat(response.data))
-				});
+						setPersons(persons.concat(response.data));
+					});
 		}
+	};
+
+	const deletePerson = (personObject) => {
+		const confirmed = window.confirm(`Do you want to delete ${personObject.name}?`);
+
+		if (!confirmed) {
+			return;
+		}
+
+		contactService.remove(personObject.id).then(() => {
+			setPersons(persons.filter((person) => person.id !== personObject.id));
+		});
 	};
 
 	return (
@@ -57,7 +69,7 @@ const App = () => {
 			/>
 
 			<h2>Contacts</h2>
-			<Persons filteredPersons={filteredPersons} />
+			<Persons filteredPersons={filteredPersons} deletePerson={deletePerson} />
 		</div>
 	);
 };
