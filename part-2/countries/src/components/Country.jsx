@@ -1,4 +1,4 @@
-const Country = ({ country }) => {
+const Country = ({ country, weather }) => {
 	return (
 		<div>
 			<h1>{country.name.common}</h1>
@@ -13,6 +13,31 @@ const Country = ({ country }) => {
 			</ul>
 
 			<img src={country.flags.png} alt={country.flags.alt ?? `flag of ${country.name.common}`} width="200" />
+
+			<h2>Weather in {country.capital?.[0]}</h2>
+
+			{weather ? (
+				<div>
+					<div>
+						Temperature: {weather.main.temp} °C
+					</div>
+
+					<img
+						src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
+						alt={weather.weather[0].description}
+					/>
+
+					<div>
+						{weather.weather[0].description}
+					</div>
+
+					<div>
+						Wind speed: {weather.wind.speed} m/s
+					</div>
+				</div>
+			) : (
+				<p>Loading weather...</p>
+			)}
 		</div>
 	);
 };
