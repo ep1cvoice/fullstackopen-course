@@ -40,6 +40,12 @@ app.get('/api/persons/:id', (req, res) => {
 	}
 });
 
+app.delete('/api/persons/:id', (req, res) => {
+    const { id } = req.params; 
+    persons = persons.filter(user => user.id !== id); 
+    res.status(200).send(`Person with ID ${id} has been deleted.`);
+  });
+
 app.get('/info', (req, res) => {
 	const currentDate = new Date();
 
@@ -47,5 +53,5 @@ app.get('/info', (req, res) => {
 });
 
 app.listen(port, () => {
-	console.log(`App listening on port ${port}`);
+	console.log(`App listening on port http://localhost:${port}`);
 });
