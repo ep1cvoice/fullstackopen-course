@@ -45,6 +45,19 @@ app.get('/api/persons/:id', (req, res) => {
 
 app.post('/api/persons', (req, res) => {
 	const body = req.body;
+
+    if (!body.name) {
+		return res.status(400).json({ error: 'No name' });
+	}
+
+    if (persons.some(p => p.name === body.name)) {
+        return res.status(400).json({ error: 'Name already exists' });
+    }
+
+	if (!body.number) {
+		return res.status(400).json({ error: 'No number' });
+	}
+    
 	
     const person = {
 		id: String(Math.floor(Math.random() * 1000000000)),
