@@ -25,14 +25,16 @@ let persons = [
 	},
 ];
 
-app.get('/', (req, res) => {
-	res.send('Hello!');
-});
-
 app.get('/api/persons', (req, res) => {
 	res.json(persons);
 });
 
+app.get('/info', (req, res) => {
+	const currentDate = new Date();
+
+	res.send(`<p>Phonebook has info for ${persons.length} people</p><p>${currentDate.toString()}</p>`);
+});
+
 app.listen(port, () => {
-	console.log(`Example app listening on port ${port}`);
+	console.log(`App listening on port ${port}`);
 });
