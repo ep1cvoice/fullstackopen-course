@@ -45,7 +45,7 @@ app.get('/api/persons', (req, res) => {
 
 app.get('/api/persons/:id', (req, res) => {
 	const id = req.params.id;
-	const person = persons.find(p => p.id === id);
+	const person = persons.find((p) => p.id === id);
 
 	if (person) {
 		res.send(person);
@@ -57,35 +57,34 @@ app.get('/api/persons/:id', (req, res) => {
 app.post('/api/persons', (req, res) => {
 	const body = req.body;
 
-    if (!body.name) {
+	if (!body.name) {
 		return res.status(400).json({ error: 'No name' });
 	}
 
-    if (persons.some(p => p.name === body.name)) {
-        return res.status(400).json({ error: 'Name already exists' });
-    }
+	if (persons.some((p) => p.name === body.name)) {
+		return res.status(400).json({ error: 'Name already exists' });
+	}
 
 	if (!body.number) {
 		return res.status(400).json({ error: 'No number' });
 	}
-    
 
 	const person = new Person({
 		name: body.name,
 		number: body.number,
 	});
 
-
-    person.save().then((savedPerson) => {
+	person.save().then((savedPerson) => {
 		res.json(savedPerson);
 	});
 });
 
 app.delete('/api/persons/:id', (req, res) => {
-    const { id } = req.params; 
-    persons = persons.filter(user => user.id !== id); 
-    res.status(200).send(`Person with ID ${id} has been deleted.`);
-  });
+	const { id } = req.params;
+	Person.findByIdAndDelete(id).then(() => {
+		res.status(204).end();
+	});
+});
 
 app.get('/info', (req, res) => {
 	const currentDate = new Date();
