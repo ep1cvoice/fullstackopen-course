@@ -1,14 +1,15 @@
 const express = require('express');
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001
 const morgan = require('morgan');
+const cors = require('cors');
 
 app.use(express.json());
 
 morgan.token('body', (req) => (req.method === 'POST' ? JSON.stringify(req.body) : ''));
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-
+app.use(cors());
 
 let persons = [
 	{

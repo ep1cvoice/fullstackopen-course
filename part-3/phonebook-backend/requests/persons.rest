@@ -14,3 +14,26 @@ content-type: application/json
 	"name": "Test Person",
 	"number": "123456"
 }
+
+//RENDER//
+
+###
+GET https://fullstackopen-course-part-3-render-task.onrender.com/api/persons
+
+###
+GET https://fullstackopen-course-part-3-render-task.onrender.com/api/persons/2
+
+###
+GET https://fullstackopen-course-part-3-render-task.onrender.com/info
+
+###
+POST https://fullstackopen-course-part-3-render-task.onrender.com/api/persons
+content-type: application/json
+
+{
+	"name": "Render Test",
+	"number": "111-222"
+}
+
+###
+DELETE https://fullstackopen-course-part-3-render-task.onrender.com/api/persons/2
