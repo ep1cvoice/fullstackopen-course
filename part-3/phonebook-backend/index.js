@@ -69,16 +69,16 @@ app.post('/api/persons', (req, res) => {
 		return res.status(400).json({ error: 'No number' });
 	}
     
-	
-    const person = {
-		id: String(Math.floor(Math.random() * 1000000000)),
+
+	const person = new Person({
 		name: body.name,
 		number: body.number,
-        
-	};
+	});
 
-    persons = persons.concat(person);
-	res.json(person);
+
+    person.save().then((savedPerson) => {
+		res.json(savedPerson);
+	});
 });
 
 app.delete('/api/persons/:id', (req, res) => {
