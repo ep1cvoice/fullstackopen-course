@@ -105,7 +105,7 @@ const App = () => {
 				})
 				.catch((error) => {
 					setNotification({
-						message: `Failed to create a contact: ${error.message}`,
+						message: `Failed to create a contact: ${error.response?.data?.error ?? error.message}`,
 						type: 'error',
 					});
 
