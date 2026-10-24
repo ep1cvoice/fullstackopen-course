@@ -10,5 +10,5 @@ The repository is organized by course parts, with exercises and projects added a
 
 ## Part 3: Phonebook backend
 
-Backend app from part 3 is live on: https://fullstackopen-course-part-3-render-task.onrender.com/api/persons
+Backend app from part 3 is live on: https://fullstackopen-course-part-3-render-task.onrender.com/
 
