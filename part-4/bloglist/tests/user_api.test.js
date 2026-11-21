@@ -1,4 +1,4 @@
-const { test, after, beforeEach } = require('node:test');
+const { test, after, before, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const mongoose = require('mongoose');
 const supertest = require('supertest');
@@ -7,6 +7,10 @@ const app = require('../app');
 const User = require('../models/user');
 
 const api = supertest(app);
+
+before(async () => {
+	await User.init();
+});
 
 beforeEach(async () => {
 	await User.deleteMany({});
@@ -45,6 +49,37 @@ test('all users are returned without password', async () => {
 	assert.strictEqual(response.body[0].username, 'root');
 	assert.ok(response.body[0].id);
 	assert.strictEqual(response.body[0].passwordHash, undefined);
+});
+
+const expectInvalidUser = async (invalidUser, errorPart) => {
+	const response = await api
+		.post('/api/users')
+		.send(invalidUser)
+		.expect(400)
+		.expect('Content-Type', /application\/json/);
+
+	assert.ok(response.body.error.includes(errorPart));
+	assert.strictEqual(await User.countDocuments({}), 1);
+};
+
+test('user without username is not created', async () => {
+	await expectInvalidUser({ name: 'No Username', password: 'validpass' }, 'username');
+});
+
+test('user with too short username is not created', async () => {
+	await expectInvalidUser({ username: 'ab', name: 'Short', password: 'validpass' }, 'username');
+});
+
+test('user without password is not created', async () => {
+	await expectInvalidUser({ username: 'nopass', name: 'No Password' }, 'password');
+});
+
+test('user with too short password is not created', async () => {
+	await expectInvalidUser({ username: 'shortpass', name: 'Short', password: 'ab' }, 'password');
+});
+
+test('user with a non unique username is not created', async () => {
+	await expectInvalidUser({ username: 'root', name: 'Duplicate', password: 'validpass' }, 'unique');
 });
 
 after(async () => {
