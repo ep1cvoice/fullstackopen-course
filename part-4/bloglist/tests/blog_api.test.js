@@ -75,6 +75,39 @@ test('a valid blog can be added', async () => {
 	assert.strictEqual(saved.likes, newBlog.likes);
 });
 
+test('likes go to 0 when missing from request', async () => {
+	const newBlog = {
+		title: 'Blog without likes',
+		author: 'Nobody',
+		url: 'http://example.com/no-likes',
+	};
+
+	await api.post('/api/blogs').send(newBlog).expect(201);
+
+	const response = await api.get('/api/blogs');
+	const saved = response.body.find((b) => b.title === newBlog.title);
+
+	assert.strictEqual(saved.likes, 0);
+});
+
+test('blog without title is not added and return 400', async () => {
+	const newBlog = { author: 'Nobody', url: 'http://example.com/no-title', likes: 1 };
+
+	await api.post('/api/blogs').send(newBlog).expect(400);
+
+	const response = await api.get('/api/blogs');
+	assert.strictEqual(response.body.length, initialBlogs.length);
+});
+
+test('blog without url is not added and return 400', async () => {
+	const newBlog = { title: 'Blog without url', author: 'Nobody', likes: 1 };
+
+	await api.post('/api/blogs').send(newBlog).expect(400);
+
+	const response = await api.get('/api/blogs');
+	assert.strictEqual(response.body.length, initialBlogs.length);
+});
+
 after(async () => {
 	await mongoose.connection.close();
 });
