@@ -5,6 +5,7 @@ const supertest = require('supertest');
 const bcrypt = require('bcrypt');
 const app = require('../app');
 const User = require('../models/user');
+const Blog = require('../models/blog');
 
 const api = supertest(app);
 
@@ -13,6 +14,7 @@ before(async () => {
 });
 
 beforeEach(async () => {
+	await Blog.deleteMany({});
 	await User.deleteMany({});
 
 	const passwordHash = await bcrypt.hash('sekret', 10);
@@ -49,6 +51,28 @@ test('all users are returned without password', async () => {
 	assert.strictEqual(response.body[0].username, 'root');
 	assert.ok(response.body[0].id);
 	assert.strictEqual(response.body[0].passwordHash, undefined);
+});
+
+test('listed users include the blogs they created', async () => {
+	const root = await User.findOne({ username: 'root' });
+	const blog = await new Blog({
+		title: 'Root blog',
+		author: 'Root',
+		url: 'http://example.com/root',
+		likes: 3,
+		user: root._id,
+	}).save();
+	root.blogs = [blog._id];
+	await root.save();
+
+	const response = await api.get('/api/users').expect(200);
+
+	const [listed] = response.body;
+	assert.strictEqual(listed.blogs.length, 1);
+	assert.strictEqual(listed.blogs[0].title, 'Root blog');
+	assert.strictEqual(listed.blogs[0].likes, 3);
+	assert.ok(listed.blogs[0].id);
+
 });
 
 const expectInvalidUser = async (invalidUser, errorPart) => {

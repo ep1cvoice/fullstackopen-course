@@ -3,7 +3,9 @@ const assert = require('node:assert');
 const mongoose = require('mongoose');
 const supertest = require('supertest');
 const app = require('../app');
+const bcrypt = require('bcrypt');
 const Blog = require('../models/blog');
+const User = require('../models/user');
 
 const api = supertest(app);
 
@@ -24,7 +26,14 @@ const initialBlogs = [
 
 beforeEach(async () => {
 	await Blog.deleteMany({});
-	await Blog.insertMany(initialBlogs);
+	await User.deleteMany({});
+
+	const passwordHash = await bcrypt.hash('sekret', 10);
+	const user = await new User({ username: 'root', name: 'Superuser', passwordHash }).save();
+
+	const blogs = await Blog.insertMany(initialBlogs.map((blog) => ({ ...blog, user: user._id })));
+	user.blogs = blogs.map((blog) => blog._id);
+	await user.save();
 });
 
 test('blogs are returned as json', async () => {
@@ -152,6 +161,43 @@ test('updating a non-existing blog returns 404', async () => {
 	const nonExistingId = new mongoose.Types.ObjectId().toString();
 
 	await api.put(`/api/blogs/${nonExistingId}`).send({ likes: 1 }).expect(404);
+});
+
+test('listed blogs include creator info without password data', async () => {
+	const response = await api.get('/api/blogs');
+
+	response.body.forEach((blog) => {
+		assert.strictEqual(blog.user.username, 'root');
+		assert.strictEqual(blog.user.name, 'Superuser');
+		assert.ok(blog.user.id);
+		assert.strictEqual(blog.user.passwordHash, undefined);
+	});
+});
+
+test('a new blog is assigned to a user and appears in that user\'s blogs', async () => {
+	const newBlog = {
+		title: 'Blog linked to a user',
+		author: 'Nobody',
+		url: 'http://example.com/linked',
+	};
+
+	const response = await api.post('/api/blogs').send(newBlog).expect(201);
+
+	const user = await User.findOne({ username: 'root' });
+	assert.strictEqual(response.body.user, user.id);
+	assert.strictEqual(user.blogs.length, initialBlogs.length + 1);
+	assert.ok(user.blogs.some((id) => id.toString() === response.body.id));
+});
+
+test('adding a blog fails with 400 when no users exist', async () => {
+	await User.deleteMany({});
+
+	await api
+		.post('/api/blogs')
+		.send({ title: 'Orphan', url: 'http://example.com/orphan' })
+		.expect(400);
+
+	assert.strictEqual(await Blog.countDocuments({}), initialBlogs.length);
 });
 
 after(async () => {
