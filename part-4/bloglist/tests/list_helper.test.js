@@ -88,3 +88,26 @@ describe('favorite blog', () => {
 		});
 	});
 });
+
+describe('most blogs', () => {
+	const blogs = [
+		{ title: 'Go To Statement Considered Harmful', author: 'Edsger W. Dijkstra', likes: 5 },
+		{ title: 'Canonical string reduction', author: 'Edsger W. Dijkstra', likes: 12 },
+		{ title: 'First class tests', author: 'Robert C. Martin', likes: 10 },
+		{ title: 'TDD harms architecture', author: 'Robert C. Martin', likes: 0 },
+		{ title: 'Clean Code', author: 'Robert C. Martin', likes: 2 },
+		{ title: 'React patterns', author: 'Michael Chan', likes: 7 },
+	];
+
+	test('returns the author with the most blogs and the blog count', () => {
+		assert.deepStrictEqual(listHelper.mostBlogs(blogs), { author: 'Robert C. Martin', blogs: 3 });
+	});
+
+	test('when list has only one blog, returns author with count 1', () => {
+		assert.deepStrictEqual(listHelper.mostBlogs([blogs[0]]), { author: 'Edsger W. Dijkstra', blogs: 1 });
+	});
+
+	test('when list is empty, return null', () => {
+		assert.strictEqual(listHelper.mostBlogs([]), null);
+	});
+});
