@@ -4,10 +4,15 @@ const mongoose = require('mongoose');
 const supertest = require('supertest');
 const app = require('../app');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const config = require('../utils/config');
 const Blog = require('../models/blog');
 const User = require('../models/user');
 
 const api = supertest(app);
+
+let token;
+const bearer = () => `Bearer ${token}`;
 
 const initialBlogs = [
 	{
@@ -34,6 +39,9 @@ beforeEach(async () => {
 	const blogs = await Blog.insertMany(initialBlogs.map((blog) => ({ ...blog, user: user._id })));
 	user.blogs = blogs.map((blog) => blog._id);
 	await user.save();
+
+	const login = await api.post('/api/login').send({ username: 'root', password: 'sekret' });
+	token = login.body.token;
 });
 
 test('blogs are returned as json', async () => {
@@ -69,6 +77,7 @@ test('a valid blog can be added', async () => {
 
 	await api
 		.post('/api/blogs')
+		.set('Authorization', bearer())
 		.send(newBlog)
 		.expect(201)
 		.expect('Content-Type', /application\/json/);
@@ -91,7 +100,7 @@ test('likes go to 0 when missing from request', async () => {
 		url: 'http://example.com/no-likes',
 	};
 
-	await api.post('/api/blogs').send(newBlog).expect(201);
+	await api.post('/api/blogs').set('Authorization', bearer()).send(newBlog).expect(201);
 
 	const response = await api.get('/api/blogs');
 	const saved = response.body.find((b) => b.title === newBlog.title);
@@ -102,7 +111,7 @@ test('likes go to 0 when missing from request', async () => {
 test('blog without title is not added and return 400', async () => {
 	const newBlog = { author: 'Nobody', url: 'http://example.com/no-title', likes: 1 };
 
-	await api.post('/api/blogs').send(newBlog).expect(400);
+	await api.post('/api/blogs').set('Authorization', bearer()).send(newBlog).expect(400);
 
 	const response = await api.get('/api/blogs');
 	assert.strictEqual(response.body.length, initialBlogs.length);
@@ -111,7 +120,7 @@ test('blog without title is not added and return 400', async () => {
 test('blog without url is not added and return 400', async () => {
 	const newBlog = { title: 'Blog without url', author: 'Nobody', likes: 1 };
 
-	await api.post('/api/blogs').send(newBlog).expect(400);
+	await api.post('/api/blogs').set('Authorization', bearer()).send(newBlog).expect(400);
 
 	const response = await api.get('/api/blogs');
 	assert.strictEqual(response.body.length, initialBlogs.length);
@@ -174,30 +183,64 @@ test('listed blogs include creator info without password data', async () => {
 	});
 });
 
-test('a new blog is assigned to a user and appears in that user\'s blogs', async () => {
+test('the user identified by the token becomes the blog creator', async () => {
+	const passwordHash = await bcrypt.hash('other-secret', 10);
+	await new User({ username: 'other', name: 'Other User', passwordHash }).save();
+	const login = await api.post('/api/login').send({ username: 'other', password: 'other-secret' });
+
 	const newBlog = {
 		title: 'Blog linked to a user',
 		author: 'Nobody',
 		url: 'http://example.com/linked',
 	};
 
-	const response = await api.post('/api/blogs').send(newBlog).expect(201);
+	const response = await api
+		.post('/api/blogs')
+		.set('Authorization', `Bearer ${login.body.token}`)
+		.send(newBlog)
+		.expect(201);
 
-	const user = await User.findOne({ username: 'root' });
-	assert.strictEqual(response.body.user, user.id);
-	assert.strictEqual(user.blogs.length, initialBlogs.length + 1);
-	assert.ok(user.blogs.some((id) => id.toString() === response.body.id));
+	const other = await User.findOne({ username: 'other' });
+	const root = await User.findOne({ username: 'root' });
+
+	assert.strictEqual(response.body.user, other.id);
+	assert.ok(other.blogs.some((id) => id.toString() === response.body.id));
+	assert.strictEqual(root.blogs.length, initialBlogs.length);
 });
 
-test('adding a blog fails with 400 when no users exist', async () => {
+const expectUnauthorized = async (authorization, errorPart) => {
+	const request = api.post('/api/blogs');
+	if (authorization) {
+		request.set('Authorization', authorization);
+	}
+
+	const response = await request
+		.send({ title: 'Should not be saved', url: 'http://example.com/nope' })
+		.expect(401);
+
+	assert.ok(response.body.error.includes(errorPart));
+	assert.strictEqual(await Blog.countDocuments({}), initialBlogs.length);
+};
+
+test('adding a blog fails with 401 when the token is missing', async () => {
+	await expectUnauthorized(null, 'token');
+});
+
+test('adding a blog fails with 401 when the token is invalid', async () => {
+	await expectUnauthorized('Bearer not-a-real-token', 'invalid');
+});
+
+test('adding a blog fails with 401 when the token is expired', async () => {
+	const root = await User.findOne({ username: 'root' });
+	const expired = jwt.sign({ username: root.username, id: root.id }, config.SECRET, { expiresIn: -10 });
+
+	await expectUnauthorized(`Bearer ${expired}`, 'expired');
+});
+
+test('adding a blog fails with 401 when the token belongs to a deleted user', async () => {
 	await User.deleteMany({});
 
-	await api
-		.post('/api/blogs')
-		.send({ title: 'Orphan', url: 'http://example.com/orphan' })
-		.expect(400);
-
-	assert.strictEqual(await Blog.countDocuments({}), initialBlogs.length);
+	await expectUnauthorized(bearer(), 'token invalid');
 });
 
 after(async () => {

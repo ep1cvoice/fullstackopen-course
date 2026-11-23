@@ -1,4 +1,6 @@
 const blogsRouter = require('express').Router();
+const jwt = require('jsonwebtoken');
+const config = require('../utils/config');
 const Blog = require('../models/blog');
 const User = require('../models/user');
 
@@ -8,9 +10,12 @@ blogsRouter.get('/', async (request, response) => {
 });
 
 blogsRouter.post('/', async (request, response) => {
-	const user = await User.findOne({});
+
+	const decodedToken = jwt.verify(request.token, config.SECRET);
+
+	const user = await User.findById(decodedToken.id);
 	if (!user) {
-		return response.status(400).json({ error: 'no users exist to be set as the blog creator' });
+		return response.status(401).json({ error: 'not valid token' });
 	}
 
 	const blog = new Blog({ ...request.body, user: user._id });
