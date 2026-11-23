@@ -126,21 +126,59 @@ test('blog without url is not added and return 400', async () => {
 	assert.strictEqual(response.body.length, initialBlogs.length);
 });
 
-test('a blog can be deleted', async () => {
+test('a blog can be deleted by its creator', async () => {
 	const blogsAtStart = await api.get('/api/blogs');
 	const blogToDelete = blogsAtStart.body[0];
 
-	await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+	await api
+		.delete(`/api/blogs/${blogToDelete.id}`)
+		.set('Authorization', bearer())
+		.expect(204);
 
 	const blogsAtEnd = await api.get('/api/blogs');
 	assert.strictEqual(blogsAtEnd.body.length, initialBlogs.length - 1);
 
 	const titles = blogsAtEnd.body.map((b) => b.title);
 	assert.ok(!titles.includes(blogToDelete.title));
+
+	const root = await User.findOne({ username: 'root' });
+	assert.ok(!root.blogs.some((id) => id.toString() === blogToDelete.id));
+});
+
+test('a blog cannot be deleted by a user who did not create it', async () => {
+	const passwordHash = await bcrypt.hash('other-secret', 10);
+	await new User({ username: 'other', name: 'Other User', passwordHash }).save();
+	const login = await api.post('/api/login').send({ username: 'other', password: 'other-secret' });
+
+	const blogsAtStart = await api.get('/api/blogs');
+	const blogToDelete = blogsAtStart.body[0];
+
+	await api
+		.delete(`/api/blogs/${blogToDelete.id}`)
+		.set('Authorization', `Bearer ${login.body.token}`)
+		.expect(403);
+
+	assert.strictEqual(await Blog.countDocuments({}), initialBlogs.length);
+});
+
+test('deleting a blog fails with 401 without a token or with an invalid one', async () => {
+	const blogsAtStart = await api.get('/api/blogs');
+	const blogToDelete = blogsAtStart.body[0];
+
+	await api.delete(`/api/blogs/${blogToDelete.id}`).expect(401);
+	await api
+		.delete(`/api/blogs/${blogToDelete.id}`)
+		.set('Authorization', 'Bearer not-a-real-token')
+		.expect(401);
+
+	assert.strictEqual(await Blog.countDocuments({}), initialBlogs.length);
 });
 
 test('deleting with a bad id return 400', async () => {
-	await api.delete('/api/blogs/not-a-valid-id').expect(400);
+	await api
+		.delete('/api/blogs/not-a-valid-id')
+		.set('Authorization', bearer())
+		.expect(400);
 
 	const response = await api.get('/api/blogs');
 	assert.strictEqual(response.body.length, initialBlogs.length);
@@ -240,7 +278,7 @@ test('adding a blog fails with 401 when the token is expired', async () => {
 test('adding a blog fails with 401 when the token belongs to a deleted user', async () => {
 	await User.deleteMany({});
 
-	await expectUnauthorized(bearer(), 'token invalid');
+	await expectUnauthorized(bearer(), 'not valid token');
 });
 
 after(async () => {
