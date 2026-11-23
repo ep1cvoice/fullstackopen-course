@@ -29,9 +29,27 @@ const mostBlogs = (blogs) => {
 	return { author, blogs: count };
 };
 
+const mostLikes = (blogs) => {
+	if (blogs.length === 0) {
+		return null;
+	}
+
+	const likesByAuthor = new Map();
+	blogs.forEach((blog) => {
+		likesByAuthor.set(blog.author, (likesByAuthor.get(blog.author) ?? 0) + blog.likes);
+	});
+
+	const [author, likes] = [...likesByAuthor.entries()].reduce((best, current) =>
+		current[1] > best[1] ? current : best,
+	);
+
+	return { author, likes };
+};
+
 module.exports = {
 	dummy,
 	totalLikes,
 	favoriteBlog,
 	mostBlogs,
+	mostLikes,
 };
